@@ -1,0 +1,128 @@
+# Docker Compose file for CS4480 PA3 Part 1 Full Topology
+# Based on the user's diagram: PA3 Diagram
+
+version: '3.8' # Specifies the version of the Docker Compose file format
+
+services:
+  ha: # Host A
+    build: . # Use the Dockerfile in the current directory
+    hostname: hosta
+    stdin_open: true # Keep STDIN open even if not attached (-i)
+    tty: true        # Allocate a pseudo-TTY (-t)
+    cap_add:
+      - ALL        # Grant all capabilities (needed for network config)
+    privileged: true # Run container in privileged mode (needed for network config)
+    networks:
+      net_ha_r1:
+        ipv4_address: 10.0.1.2 # IP for HA on the link to R1
+
+  hb: # Host B
+    build: .
+    hostname: hostb
+    stdin_open: true
+    tty: true
+    cap_add:
+      - ALL
+    privileged: true
+    networks:
+      net_r3_hb:
+        ipv4_address: 10.0.6.2 # IP for HB on the link to R3
+
+  r1: # Router 1
+    build: .
+    hostname: r1
+    stdin_open: true
+    tty: true
+    cap_add:
+      - ALL
+    privileged: true
+    networks:
+      net_ha_r1: # Link to HA
+        ipv4_address: 10.0.1.1
+      net_r1_r2: # Link to R2
+        ipv4_address: 10.0.2.1
+      net_r1_r4: # Link to R4
+        ipv4_address: 10.0.3.1
+
+  r2: # Router 2
+    build: .
+    hostname: r2
+    stdin_open: true
+    tty: true
+    cap_add:
+      - ALL
+    privileged: true
+    networks:
+      net_r1_r2: # Link to R1
+        ipv4_address: 10.0.2.2
+      net_r2_r3: # Link to R3
+        ipv4_address: 10.0.4.2 # Note: Using .2 on this link as per diagram
+
+  r3: # Router 3
+    build: .
+    hostname: r3
+    stdin_open: true
+    tty: true
+    cap_add:
+      - ALL
+    privileged: true
+    networks:
+      net_r2_r3: # Link to R2
+        ipv4_address: 10.0.4.1 # Note: Using .1 on this link as per diagram
+      net_r4_r3: # Link to R4
+        ipv4_address: 10.0.5.1 # Note: Using .1 on this link as per diagram
+      net_r3_hb: # Link to HB
+        ipv4_address: 10.0.6.1
+
+  r4: # Router 4
+    build: .
+    hostname: r4
+    stdin_open: true
+    tty: true
+    cap_add:
+      - ALL
+    privileged: true
+    networks:
+      net_r1_r4: # Link to R1
+        ipv4_address: 10.0.3.2
+      net_r4_r3: # Link to R3
+        ipv4_address: 10.0.5.2 # Note: Using .2 on this link as per diagram
+
+# Define the networks (corresponding to the links in the diagram)
+networks:
+  net_ha_r1: # Network between HA and R1
+    driver: bridge # Default Docker network driver
+    ipam: # IP Address Management
+      driver: default
+      config:
+        - subnet: 10.0.1.0/24
+  net_r1_r2: # Network between R1 and R2
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.2.0/24
+  net_r1_r4: # Network between R1 and R4
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.3.0/24
+  net_r2_r3: # Network between R2 and R3
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.4.0/24
+  net_r4_r3: # Network between R4 and R3
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.5.0/24
+  net_r3_hb: # Network between R3 and HB
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.0.6.0/24
